@@ -114,7 +114,7 @@ Notification
 
 ## 6. ERD
 
-File ERD: **`erd.png`**
+![Sơ đồ ERD](erd.png)
 
 Sơ đồ thể hiện quan hệ giữa User, Warehouse, Zone, Product, Inventory, Inbound, Outbound, Inventory Transaction và Notification DB.
 
