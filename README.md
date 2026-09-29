@@ -147,7 +147,7 @@ SQL được thiết kế cho PostgreSQL, gồm Core DB và Notification DB.
 
 Chi tiết từng màn hình và đơn vị chức năng nằm trong:
 
-**`SCREEN_SPEC.md`**
+[README_SCREEN_SPEC.md](README_SCREEN_SPEC.md)
 
 Mỗi chức năng bao gồm:
 
@@ -329,7 +329,7 @@ logistics-warehouse/
 │
 ├── database.sql
 ├── erd.png
-├── SCREEN_SPEC.md
+├── README_SCREEN_SPEC.md
 └── README.md
 ```
 
@@ -435,7 +435,8 @@ Cần có:
 | `README.md`      | Tổng quan project, kiến trúc, công nghệ        |
 | `erd.png`        | Sơ đồ ERD                                        |
 | `database.sql`   | SQL tạo database/schema                            |
-| `SCREEN_SPEC.md` | Input / Output / API / Logic / SQL từng màn hình |
+| [README_SCREEN_SPEC.md](README_SCREEN_SPEC.md) | Input / Output / API / Logic / SQL từng màn hình |
+| [README_CICD_FILES.md](README_CICD_FILES.md) | Hướng dẫn CI/CD và tra cứu các file triển khai |
 
 ## 19. Ghi chú triển khai
 
