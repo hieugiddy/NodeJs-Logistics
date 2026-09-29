@@ -13,7 +13,7 @@
 - Quản lý Admin/Super Admin.
 - Gửi thông báo thông qua Notification Service.
 
-Thiết kế được xây dựng theo assignment NodeJS/NestJS: 2 backend service gồm **Core Business Service** và **Notification Service**, có CRUD, Redis caching, JWT authorization, SQL database và RabbitMQ. 
+Thiết kế được xây dựng theo assignment NodeJS/NestJS: 2 backend service gồm **Core Business Service** và **Notification Service**, có CRUD, Redis caching, JWT authorization, SQL database và RabbitMQ.
 
 ## 2. Mục tiêu
 
@@ -29,7 +29,7 @@ Thiết kế được xây dựng theo assignment NodeJS/NestJS: 2 backend servi
 
 ```text
                          ┌───────────────────┐
-                         │   React Frontend  │
+                         │   Angular Frontend  │
                          └─────────┬─────────┘
                                    │ REST/JSON
                                    ▼
@@ -59,23 +59,23 @@ Thiết kế được xây dựng theo assignment NodeJS/NestJS: 2 backend servi
                   Notification PostgreSQL
 ```
 
-Assignment yêu cầu core service gửi mutation events vào RabbitMQ và notification service consume để lưu notification cho subscriber. 
+Assignment yêu cầu core service gửi mutation events vào RabbitMQ và notification service consume để lưu notification cho subscriber.
 
 ## 4. Công nghệ
 
-| Thành phần | Công nghệ |
-|---|---|
-| Language | TypeScript / NodeJS |
-| Framework | NestJS |
-| ORM | TypeORM |
-| DB | PostgreSQL |
-| Cache | Redis |
-| Message Broker | RabbitMQ |
-| Auth | JWT + password hashing |
-| Validation | Joi / DTO validation |
-| Test | Jest + SuperTest |
-| Code quality | ESLint + Prettier |
-| Config | dotenv |
+| Thành phần   | Công nghệ            |
+| -------------- | ---------------------- |
+| Language       | TypeScript / NodeJS    |
+| Framework      | NestJS                 |
+| ORM            | TypeORM                |
+| DB             | PostgreSQL             |
+| Cache          | Redis                  |
+| Message Broker | RabbitMQ               |
+| Auth           | JWT + password hashing |
+| Validation     | Joi / DTO validation   |
+| Test           | Jest + SuperTest       |
+| Code quality   | ESLint + Prettier      |
+| Config         | dotenv                 |
 
 ## 5. Domain
 
@@ -404,18 +404,18 @@ GET /api/v1/products?sortBy=createdAt&sortOrder=DESC
 
 ## 16. HTTP status
 
-| Status | Trường hợp |
-|---|---|
-| 200 | GET/UPDATE thành công |
-| 201 | CREATE thành công |
-| 204 | DELETE thành công không body |
-| 400 | Validation/business input error |
-| 401 | Chưa xác thực |
-| 403 | Không đủ quyền |
-| 404 | Không tìm thấy |
-| 409 | Conflict, ví dụ SKU/code trùng |
-| 429 | Rate limit |
-| 500 | Internal server error |
+| Status | Trường hợp                     |
+| ------ | --------------------------------- |
+| 200    | GET/UPDATE thành công           |
+| 201    | CREATE thành công               |
+| 204    | DELETE thành công không body   |
+| 400    | Validation/business input error   |
+| 401    | Chưa xác thực                  |
+| 403    | Không đủ quyền                |
+| 404    | Không tìm thấy                 |
+| 409    | Conflict, ví dụ SKU/code trùng |
+| 429    | Rate limit                        |
+| 500    | Internal server error             |
 
 ## 17. Testing
 
@@ -430,11 +430,11 @@ Cần có:
 
 ## 18. Các tài liệu đi kèm
 
-| File | Nội dung |
-|---|---|
-| `README.md` | Tổng quan project, kiến trúc, công nghệ |
-| `erd.png` | Sơ đồ ERD |
-| `database.sql` | SQL tạo database/schema |
+| File               | Nội dung                                           |
+| ------------------ | --------------------------------------------------- |
+| `README.md`      | Tổng quan project, kiến trúc, công nghệ        |
+| `erd.png`        | Sơ đồ ERD                                        |
+| `database.sql`   | SQL tạo database/schema                            |
 | `SCREEN_SPEC.md` | Input / Output / API / Logic / SQL từng màn hình |
 
 ## 19. Ghi chú triển khai
