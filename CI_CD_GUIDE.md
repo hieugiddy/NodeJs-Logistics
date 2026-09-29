@@ -199,6 +199,8 @@ smoke
 rollback
 ```
 
+![CI/CD Pipeline](CICD_PIPELINE.png)
+
 ## Ý nghĩa
 
 | Stage     | Mục đích                  |
