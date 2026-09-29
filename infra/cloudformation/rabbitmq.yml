@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Logistics Warehouse Amazon MQ RabbitMQ
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: production
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  VpcCidr:
+    Type: String
+    Default: 10.20.0.0/16
+  PrivateSubnet1Id:
+    Type: AWS::EC2::Subnet::Id
+  PrivateSubnet2Id:
+    Type: AWS::EC2::Subnet::Id
+  RabbitMQPassword:
+    Type: String
+    NoEcho: true
+  RabbitMQUsername:
+    Type: String
+    Default: logistics
+
+Resources:
+  RabbitMQSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RabbitMQ security group
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5671
+          ToPort: 5671
+          CidrIp: !Ref VpcCidr
+
+  Broker:
+    Type: AWS::AmazonMQ::Broker
+    Properties:
+      AutoMinorVersionUpgrade: true
+      BrokerName: !Sub "${EnvironmentName}-rabbitmq"
+      DeploymentMode: SINGLE_INSTANCE
+      EngineType: RABBITMQ
+      EngineVersion: "3.13"
+      HostInstanceType: mq.t3.micro
+      PubliclyAccessible: false
+      Users:
+        - Password: !Ref RabbitMQPassword
+          Username: !Ref RabbitMQUsername
+      SecurityGroups:
+        - !Ref RabbitMQSecurityGroup
+      SubnetIds:
+        - !Ref PrivateSubnet1Id
+
+Outputs:
+  RabbitMQUsername:
+    Value: !Ref RabbitMQUsername
+  RabbitMQBrokerId:
+    Value: !Ref Broker

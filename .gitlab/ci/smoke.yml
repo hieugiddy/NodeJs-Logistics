@@ -1,0 +1,9 @@
+smoke_test:
+  stage: smoke
+  image: curlimages/curl:8.10.1
+  needs:
+    - deploy
+  script:
+    - ./scripts/smoke-test.sh "${API_BASE_URL}"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

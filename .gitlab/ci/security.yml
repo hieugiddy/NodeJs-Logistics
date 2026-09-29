@@ -1,0 +1,10 @@
+security:
+  stage: security
+  image: node:22-alpine
+  needs:
+    - job: install
+      artifacts: true
+  script:
+    - npm audit --audit-level=high
+  rules:
+    - if: '$CI_COMMIT_BRANCH'

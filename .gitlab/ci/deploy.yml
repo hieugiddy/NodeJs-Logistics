@@ -1,0 +1,47 @@
+configure_server:
+  stage: configure
+  image: alpine:3.20
+  needs:
+    - provision_infrastructure
+  before_script:
+    - apk add --no-cache ansible openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$EC2_SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+  script:
+    - ./scripts/generate-inventory.sh
+    - ansible-playbook -i ansible/inventory/production.ini ansible/playbooks/configure-server.yml
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+migration:
+  stage: migration
+  image: alpine:3.20
+  needs:
+    - configure_server
+  before_script:
+    - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$EC2_SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+  script:
+    - ./scripts/generate-inventory.sh
+    - ./scripts/migration.sh
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+deploy:
+  stage: deploy
+  image: alpine:3.20
+  needs:
+    - migration
+  before_script:
+    - apk add --no-cache ansible openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$EC2_SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+  script:
+    - ./scripts/generate-inventory.sh
+    - ansible-playbook -i ansible/inventory/production.ini ansible/playbooks/deploy.yml -e image_tag="${CI_COMMIT_SHA}"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

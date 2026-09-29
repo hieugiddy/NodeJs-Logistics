@@ -1,0 +1,170 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Logistics Warehouse EC2, ECR and ALB
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: production
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  VpcCidr:
+    Type: String
+    Default: 10.20.0.0/16
+  PublicSubnet1Id:
+    Type: AWS::EC2::Subnet::Id
+  PublicSubnet2Id:
+    Type: AWS::EC2::Subnet::Id
+  InstanceType:
+    Type: String
+    Default: t3.small
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: logistics-warehouse
+  SSHAllowedCidr:
+    Type: String
+    Description: CIDR allowed to SSH to EC2. Restrict this to your runner/admin IP.
+    Default: 0.0.0.0/0
+
+Resources:
+  CoreRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: logistics-core
+      ImageScanningConfiguration:
+        ScanOnPush: true
+
+  NotificationRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: logistics-notification
+      ImageScanningConfiguration:
+        ScanOnPush: true
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Logistics application EC2 security group
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 3001
+          ToPort: 3001
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHAllowedCidr
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Logistics ALB security group
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2Role
+
+  EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      # IMPORTANT: replace with an AMI ID valid for your AWS region/account.
+      ImageId: ami-REPLACE_ME
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref PublicSubnet1Id
+      KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      Tags:
+        - Key: Name
+          Value: !Sub "${EnvironmentName}-backend"
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          set -e
+          if command -v dnf >/dev/null 2>&1; then
+            dnf install -y docker
+          elif command -v yum >/dev/null 2>&1; then
+            yum install -y docker
+          fi
+          systemctl enable docker
+          systemctl start docker
+          usermod -aG docker ec2-user || true
+          mkdir -p /opt/logistics-warehouse
+
+  ALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Subnets:
+        - !Ref PublicSubnet1Id
+        - !Ref PublicSubnet2Id
+
+  CoreTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Port: 3000
+      Protocol: HTTP
+      VpcId: !Ref VpcId
+      TargetType: instance
+      Targets:
+        - Id: !Ref EC2
+          Port: 3000
+      HealthCheckPath: /health
+      HealthCheckProtocol: HTTP
+
+  CoreListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ALB
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref CoreTargetGroup
+
+Outputs:
+  EC2InstanceId:
+    Value: !Ref EC2
+  EC2PublicIp:
+    Value: !GetAtt EC2.PublicIp
+  ALBDnsName:
+    Value: !GetAtt ALB.DNSName
+  CoreRepositoryUri:
+    Value: !GetAtt CoreRepository.RepositoryUri
+  NotificationRepositoryUri:
+    Value: !GetAtt NotificationRepository.RepositoryUri

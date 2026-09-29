@@ -1,0 +1,26 @@
+unit_test:
+  stage: test
+  image: node:22-alpine
+  needs:
+    - job: install
+      artifacts: true
+  script:
+    - npm run test:cov
+  artifacts:
+    when: always
+    paths:
+      - coverage/
+    expire_in: 7 days
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
+integration_test:
+  stage: test
+  image: node:22-alpine
+  needs:
+    - job: install
+      artifacts: true
+  script:
+    - npm run test:e2e
+  rules:
+    - if: '$CI_COMMIT_BRANCH'

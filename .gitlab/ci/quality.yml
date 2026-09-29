@@ -1,0 +1,12 @@
+quality:
+  stage: quality
+  image: node:22-alpine
+  needs:
+    - job: install
+      artifacts: true
+  script:
+    - npm run lint
+    - npm run format:check
+    - npm run typecheck
+  rules:
+    - if: '$CI_COMMIT_BRANCH'

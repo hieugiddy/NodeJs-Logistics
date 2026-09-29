@@ -1,0 +1,43 @@
+---
+- name: Deploy Logistics Warehouse
+  hosts: app
+  become: true
+
+  vars:
+    image_tag: "{{ image_tag }}"
+    aws_region: "{{ lookup('env', 'AWS_DEFAULT_REGION') }}"
+    aws_account_id: "{{ lookup('env', 'AWS_ACCOUNT_ID') }}"
+    ecr_registry: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com"
+
+  tasks:
+    - name: Login Docker to ECR
+      ansible.builtin.shell: |
+        aws ecr get-login-password --region {{ aws_region }} | \
+        docker login --username AWS --password-stdin {{ ecr_registry }}
+      args:
+        executable: /bin/bash
+      changed_when: true
+
+    - name: Pull core image
+      ansible.builtin.command:
+        cmd: docker pull {{ ecr_registry }}/logistics-core:{{ image_tag }}
+
+    - name: Pull notification image
+      ansible.builtin.command:
+        cmd: docker pull {{ ecr_registry }}/logistics-notification:{{ image_tag }}
+
+    - name: Start application
+      ansible.builtin.command:
+        cmd: docker compose -f /opt/logistics-warehouse/docker-compose.yml up -d
+      environment:
+        IMAGE_TAG: "{{ image_tag }}"
+        ECR_REGISTRY: "{{ ecr_registry }}"
+
+    - name: Wait for core health
+      ansible.builtin.uri:
+        url: http://127.0.0.1:3000/health
+        status_code: 200
+      register: health
+      retries: 12
+      delay: 5
+      until: health.status == 200

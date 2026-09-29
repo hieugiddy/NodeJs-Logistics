@@ -1,0 +1,47 @@
+stages:
+  - install
+  - quality
+  - test
+  - security
+  - build
+  - provision
+  - configure
+  - migration
+  - deploy
+  - smoke
+  - rollback
+
+variables:
+  AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+  STACK_PREFIX: ${AWS_STACK_PREFIX}
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+
+include:
+  - local: ".gitlab/ci/quality.yml"
+  - local: ".gitlab/ci/test.yml"
+  - local: ".gitlab/ci/security.yml"
+  - local: ".gitlab/ci/build.yml"
+  - local: ".gitlab/ci/provision.yml"
+  - local: ".gitlab/ci/deploy.yml"
+  - local: ".gitlab/ci/smoke.yml"
+  - local: ".gitlab/ci/rollback.yml"
+
+install:
+  stage: install
+  image: node:22-alpine
+  script:
+    - npm ci
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'

@@ -1,0 +1,20 @@
+provision_infrastructure:
+  stage: provision
+  image:
+    name: amazon/aws-cli:2
+    entrypoint: [""]
+  needs:
+    - build_and_push_images
+  script:
+    - aws cloudformation deploy --stack-name "${STACK_PREFIX}-network" --template-file infra/cloudformation/network.yml --capabilities CAPABILITY_NAMED_IAM --parameter-overrides EnvironmentName="${APP_ENV}" VpcCidr="10.20.0.0/16"
+    - export VPC_ID="$(aws cloudformation describe-stacks --stack-name "${STACK_PREFIX}-network" --query 'Stacks[0].Outputs[?OutputKey==`VpcId`].OutputValue' --output text)"
+    - export PUBLIC_SUBNET_1="$(aws cloudformation describe-stacks --stack-name "${STACK_PREFIX}-network" --query 'Stacks[0].Outputs[?OutputKey==`PublicSubnet1Id`].OutputValue' --output text)"
+    - export PUBLIC_SUBNET_2="$(aws cloudformation describe-stacks --stack-name "${STACK_PREFIX}-network" --query 'Stacks[0].Outputs[?OutputKey==`PublicSubnet2Id`].OutputValue' --output text)"
+    - export PRIVATE_SUBNET_1="$(aws cloudformation describe-stacks --stack-name "${STACK_PREFIX}-network" --query 'Stacks[0].Outputs[?OutputKey==`PrivateSubnet1Id`].OutputValue' --output text)"
+    - export PRIVATE_SUBNET_2="$(aws cloudformation describe-stacks --stack-name "${STACK_PREFIX}-network" --query 'Stacks[0].Outputs[?OutputKey==`PrivateSubnet2Id`].OutputValue' --output text)"
+    - aws cloudformation deploy --stack-name "${STACK_PREFIX}-backend" --template-file infra/cloudformation/backend.yml --capabilities CAPABILITY_NAMED_IAM --parameter-overrides EnvironmentName="${APP_ENV}" VpcId="${VPC_ID}" PublicSubnet1Id="${PUBLIC_SUBNET_1}" PublicSubnet2Id="${PUBLIC_SUBNET_2}" VpcCidr="10.20.0.0/16"
+    - aws cloudformation deploy --stack-name "${STACK_PREFIX}-database" --template-file infra/cloudformation/database.yml --parameter-overrides EnvironmentName="${APP_ENV}" VpcId="${VPC_ID}" PrivateSubnet1Id="${PRIVATE_SUBNET_1}" PrivateSubnet2Id="${PRIVATE_SUBNET_2}" DatabasePassword="${DB_PASSWORD}"
+    - aws cloudformation deploy --stack-name "${STACK_PREFIX}-redis" --template-file infra/cloudformation/redis.yml --parameter-overrides EnvironmentName="${APP_ENV}" VpcId="${VPC_ID}" PrivateSubnet1Id="${PRIVATE_SUBNET_1}" PrivateSubnet2Id="${PRIVATE_SUBNET_2}" VpcCidr="10.20.0.0/16"
+    - aws cloudformation deploy --stack-name "${STACK_PREFIX}-rabbitmq" --template-file infra/cloudformation/rabbitmq.yml --parameter-overrides EnvironmentName="${APP_ENV}" VpcId="${VPC_ID}" PrivateSubnet1Id="${PRIVATE_SUBNET_1}" PrivateSubnet2Id="${PRIVATE_SUBNET_2}" VpcCidr="10.20.0.0/16" RabbitMQPassword="${RABBITMQ_PASSWORD}"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

@@ -1,0 +1,28 @@
+services:
+  core:
+    image: ${ECR_REGISTRY}/logistics-core:${IMAGE_TAG}
+    container_name: logistics-core
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  notification:
+    image: ${ECR_REGISTRY}/logistics-notification:${IMAGE_TAG}
+    container_name: logistics-notification
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

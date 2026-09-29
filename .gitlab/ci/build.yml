@@ -1,0 +1,40 @@
+build_app:
+  stage: build
+  image: node:22-alpine
+  needs:
+    - quality
+    - unit_test
+    - integration_test
+    - security
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
+build_and_push_images:
+  stage: build
+  image:
+    name: amazon/aws-cli:2
+    entrypoint: [""]
+  services:
+    - name: docker:27-dind
+      alias: docker
+  needs:
+    - build_app
+  before_script:
+    - yum install -y docker || true
+    - aws --version
+    - until docker info >/dev/null 2>&1; do sleep 2; done
+    - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+  script:
+    - export IMAGE_TAG="${CI_COMMIT_SHA}"
+    - docker build -f apps/core/Dockerfile -t "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/logistics-core:${IMAGE_TAG}" .
+    - docker build -f apps/notification/Dockerfile -t "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/logistics-notification:${IMAGE_TAG}" .
+    - docker push "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/logistics-core:${IMAGE_TAG}"
+    - docker push "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/logistics-notification:${IMAGE_TAG}"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
